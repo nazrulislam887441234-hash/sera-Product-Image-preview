@@ -1,0 +1,7 @@
+name = "sera-product-preview"
+main = "src/index.js"
+compatibility_date = "2026-09-29"
+
+[vars]
+FIREBASE_PROJECT_ID = "sera-product"
+FIREBASE_DATABASE = "(default)"
