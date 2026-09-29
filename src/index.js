@@ -105,7 +105,7 @@ export default {
       const images = getFirestoreArray(fields.image);
       const image =
         images.length > 0
-         ? images[0]
+        ? images[0]
           : "https://seraproduct.com/photo/logo.png";
 
       const html = productPreview({
@@ -194,18 +194,24 @@ function productPreview({ productName, description, image, slug }) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SERA PRODUCT</title>
+<title>${safeName} | SERA PRODUCT</title>
 <meta name="description" content="${safeDescription}">
 
-<!-- Open Graph - Title বাদ দেওয়া হয়েছে, শুধু Description + Image -->
+<!-- Open Graph - সব প্লাটফর্মে টাইটেল আসবে + WhatsApp ছবি ফিক্স -->
+<meta property="og:title" content="${safeName}">
 <meta property="og:description" content="${safeDescription}">
 <meta property="og:image" content="${safeImage}">
+<meta property="og:image:secure_url" content="${safeImage}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:url" content="${escapeHtml(canonical)}">
 <meta property="og:type" content="product">
 <meta property="og:site_name" content="SERA PRODUCT">
 
-<!-- Twitter - Title বাদ দেওয়া হয়েছে -->
+<!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${safeName}">
 <meta name="twitter:description" content="${safeDescription}">
 <meta name="twitter:image" content="${safeImage}">
 
@@ -280,9 +286,9 @@ h1 { margin: 0 0 12px; font-size: 21px; line-height: 1.4; }
 
 function escapeHtml(value) {
   return String(value)
-   .replace(/&/g, "&amp;")
-   .replace(/</g, "&lt;")
-   .replace(/>/g, "&gt;")
-   .replace(/"/g, "&quot;")
-   .replace(/'/g, "&#039;");
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;")
+  .replace(/'/g, "&#039;");
 }
