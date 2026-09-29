@@ -1,0 +1,14 @@
+{
+  "name": "sera-product-preview",
+  "version": "1.0.0",
+  "description": "SERA PRODUCT Firebase product preview Cloudflare Worker",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}
