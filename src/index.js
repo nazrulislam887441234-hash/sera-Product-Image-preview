@@ -4,7 +4,7 @@ export default {
       const url = new URL(request.url);
 
       if (url.pathname!== "/product") {
-        return fetch(request); // অন্য URL হলে আসল সাইট
+        return fetch(request);
       }
 
       const FIREBASE_PROJECT_ID = env.FIREBASE_PROJECT_ID;
@@ -35,21 +35,12 @@ export default {
         return fetch(request);
       }
 
-      // 1. চেক করো Bot নাকি মানুষ
-      const userAgent =
-        request.headers.get("user-agent") || "";
+      const userAgent = request.headers.get("user-agent") || "";
+      const isBot = isPreviewBot(userAgent, url.search);
 
-      const isBot = isPreviewBot(
-        userAgent,
-        url.search
-      );
-
-      // মানুষ হলে আসল সাইটে যেতে দাও
       if (!isBot) {
         return fetch(request);
       }
-
-      // Bot হলে শুধু Preview HTML বানাও
 
       const firestoreUrl =
         `https://firestore.googleapis.com/v1/projects/` +
@@ -59,149 +50,84 @@ export default {
 
       const firestoreQuery = {
         structuredQuery: {
-          from: [
-            {
-              collectionId: "products"
-            }
-          ],
-
+          from: [{ collectionId: "products" }],
           where: {
             compositeFilter: {
               op: "AND",
-
               filters: [
                 {
                   fieldFilter: {
-                    field: {
-                      fieldPath: "productSlug"
-                    },
-
+                    field: { fieldPath: "productSlug" },
                     op: "EQUAL",
-
-                    value: {
-                      stringValue: slug
-                    }
+                    value: { stringValue: slug }
                   }
                 },
-
                 {
                   fieldFilter: {
-                    field: {
-                      fieldPath: "active"
-                    },
-
+                    field: { fieldPath: "active" },
                     op: "EQUAL",
-
-                    value: {
-                      booleanValue: true
-                    }
+                    value: { booleanValue: true }
                   }
                 }
               ]
             }
           },
-
-          // শুধু একটি matching document
           limit: 1
         }
       };
 
-      const response = await fetch(
-        firestoreUrl,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json"
-          },
-
-          body: JSON.stringify(
-            firestoreQuery
-          )
-        }
-      );
+      const response = await fetch(firestoreUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(firestoreQuery)
+      });
 
       if (!response.ok) {
         return fetch(request);
       }
 
       const result = await response.json();
-
-      const documentResult =
-        result.find(
-          item =>
-            item &&
-            item.document
-        );
+      const documentResult = result.find(item => item && item.document);
 
       if (!documentResult) {
         return fetch(request);
       }
 
-      const fields =
-        documentResult.document.fields || {};
+      const fields = documentResult.document.fields || {};
 
       const description =
-        getFirestoreValue(
-          fields.productDescription
-        ) ||
+        getFirestoreValue(fields.productDescription) ||
         "এই প্রোডাক্ট সম্পর্কে বিস্তারিত তথ্য দেখতে ক্লিক করুন।";
 
       const productName =
-        getFirestoreValue(
-          fields.productName
-        ) ||
-        "SERA PRODUCT";
+        getFirestoreValue(fields.productName) || "SERA PRODUCT";
 
-      const images =
-        getFirestoreArray(
-          fields.image
-        );
-
+      const images = getFirestoreArray(fields.image);
       const image =
         images.length > 0
          ? images[0]
           : "https://seraproduct.com/photo/logo.png";
 
-      const html =
-        productPreview({
-          productName,
-          description,
-          image,
-          slug
-        });
+      const html = productPreview({
+        productName,
+        description,
+        image,
+        slug
+      });
 
-      return htmlResponse(
-        html,
-        200
-      );
-
+      return htmlResponse(html, 200);
     } catch (error) {
       console.error(error);
-
-      // Error হলেও মানুষের সাইট ব্লক হবে না
       return fetch(request);
     }
   }
 };
 
-/* =========================================================
-   Bot Detector
-========================================================= */
-
-function isPreviewBot(
-  userAgent,
-  search
-) {
-  const ua =
-    userAgent.toLowerCase();
-
-  if (
-    search.includes("bot=true")
-  ) {
+function isPreviewBot(userAgent, search) {
+  const ua = userAgent.toLowerCase();
+  if (search.includes("bot=true")) {
     return true;
   }
-
   const socialBots = [
     "facebookexternalhit",
     "facebookcatalog",
@@ -217,7 +143,6 @@ function isPreviewBot(
     "outbrain",
     "facebot"
   ];
-
   const searchBots = [
     "googlebot",
     "bingbot",
@@ -227,385 +152,137 @@ function isPreviewBot(
     "google-inspectiontool",
     "googleother"
   ];
-
-  if (
-    searchBots.some(
-      bot => ua.includes(bot)
-    )
-  ) {
+  if (searchBots.some(bot => ua.includes(bot))) {
     return false;
   }
-
-  return socialBots.some(
-    bot => ua.includes(bot)
-  );
+  return socialBots.some(bot => ua.includes(bot));
 }
 
-/* =========================================================
-   Firestore Value Parser
-========================================================= */
-
-function getFirestoreValue(
-  field
-) {
-  if (!field) {
-    return null;
-  }
-
-  if (
-    field.stringValue!== undefined
-  ) {
-    return field.stringValue;
-  }
-
-  if (
-    field.integerValue!== undefined
-  ) {
-    return field.integerValue;
-  }
-
-  if (
-    field.doubleValue!== undefined
-  ) {
-    return field.doubleValue;
-  }
-
-  if (
-    field.booleanValue!== undefined
-  ) {
-    return field.booleanValue;
-  }
-
+function getFirestoreValue(field) {
+  if (!field) return null;
+  if (field.stringValue!== undefined) return field.stringValue;
+  if (field.integerValue!== undefined) return field.integerValue;
+  if (field.doubleValue!== undefined) return field.doubleValue;
+  if (field.booleanValue!== undefined) return field.booleanValue;
   return null;
 }
 
-/* =========================================================
-   Firestore Array Parser
-========================================================= */
-
-function getFirestoreArray(
-  field
-) {
-  if (
-   !field ||
-   !field.arrayValue
-  ) {
-    return [];
-  }
-
-  const values =
-    field.arrayValue.values || [];
-
-  return values
-   .map(item =>
-      getFirestoreValue(item)
-    )
-   .filter(Boolean);
+function getFirestoreArray(field) {
+  if (!field ||!field.arrayValue) return [];
+  const values = field.arrayValue.values || [];
+  return values.map(item => getFirestoreValue(item)).filter(Boolean);
 }
 
-/* =========================================================
-   HTML Response
-========================================================= */
-
-function htmlResponse(
-  html,
-  status = 200
-) {
-  return new Response(
-    html,
-    {
-      status,
-
-      headers: {
-        "content-type":
-          "text/html; charset=UTF-8",
-
-        "cache-control":
-          "public, max-age=60, s-maxage=300"
-      }
+function htmlResponse(html, status = 200) {
+  return new Response(html, {
+    status,
+    headers: {
+      "content-type": "text/html; charset=UTF-8",
+      "cache-control": "public, max-age=60, s-maxage=300"
     }
-  );
+  });
 }
 
-/* =========================================================
-   Product Preview HTML - OG Title বাদ দেওয়া হয়েছে
-========================================================= */
-
-function productPreview({
-  productName,
-  description,
-  image,
-  slug
-}) {
-  const safeName =
-    escapeHtml(productName);
-
-  const safeDescription =
-    escapeHtml(description);
-
-  const safeImage =
-    escapeHtml(image);
-
-  const canonical =
-    `https://seraproduct.com/product?${encodeURIComponent(slug)}`;
+function productPreview({ productName, description, image, slug }) {
+  const safeName = escapeHtml(productName);
+  const safeDescription = escapeHtml(description);
+  const safeImage = escapeHtml(image);
+  const canonical = `https://seraproduct.com/product?${encodeURIComponent(slug)}`;
 
   return `<!DOCTYPE html>
-
 <html lang="bn">
-
 <head>
-
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SERA PRODUCT</title>
+<meta name="description" content="${safeDescription}">
 
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
-
-<title>
-  ${safeName} | SERA PRODUCT
-</title>
-
-<meta
-  name="description"
-  content="${safeDescription}"
->
-
-<!-- Open Graph - Title বাদ দেওয়া হয়েছে -->
-
-<meta
-  property="og:description"
-  content="${safeDescription}"
->
-
-<meta
-  property="og:image"
-  content="${safeImage}"
->
-
-<meta
-  property="og:url"
-  content="${escapeHtml(canonical)}"
->
-
-<meta
-  property="og:type"
-  content="product"
->
-
-<meta
-  property="og:site_name"
-  content="SERA PRODUCT"
->
+<!-- Open Graph - Title বাদ দেওয়া হয়েছে, শুধু Description + Image -->
+<meta property="og:description" content="${safeDescription}">
+<meta property="og:image" content="${safeImage}">
+<meta property="og:url" content="${escapeHtml(canonical)}">
+<meta property="og:type" content="product">
+<meta property="og:site_name" content="SERA PRODUCT">
 
 <!-- Twitter - Title বাদ দেওয়া হয়েছে -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:description" content="${safeDescription}">
+<meta name="twitter:image" content="${safeImage}">
 
-<meta
-  name="twitter:card"
-  content="summary_large_image"
->
-
-<meta
-  name="twitter:description"
-  content="${safeDescription}"
->
-
-<meta
-  name="twitter:image"
-  content="${safeImage}"
->
-
-<link
-  rel="icon"
-  href="https://seraproduct.com/photo/logo.png"
->
-
+<link rel="icon" href="https://seraproduct.com/photo/logo.png">
 <style>
-
-* {
-  box-sizing: border-box;
-}
-
+* { box-sizing: border-box; }
 body {
   margin: 0;
-
   min-height: 100vh;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   padding: 20px;
-
   background: #f5f5f5;
-
-  font-family:
-    Arial,
-    "Noto Sans Bengali",
-    sans-serif;
-
+  font-family: Arial, "Noto Sans Bengali", sans-serif;
   color: #111;
 }
-
 .preview {
   width: 100%;
-
   max-width: 520px;
-
   background: #fff;
-
   border-radius: 18px;
-
   overflow: hidden;
-
-  box-shadow:
-    0 10px 35px rgba(0,0,0,.10);
+  box-shadow: 0 10px 35px rgba(0,0,0,.10);
 }
-
 .preview-image {
   width: 100%;
-
   height: 300px;
-
   object-fit: cover;
-
   display: block;
-
   background: #eee;
 }
-
-.content {
-  padding: 20px;
-}
-
-.brand {
-  font-size: 13px;
-
-  font-weight: 700;
-
-  color: #ff6a00;
-
-  margin-bottom: 8px;
-}
-
-h1 {
-  margin: 0 0 12px;
-
-  font-size: 21px;
-
-  line-height: 1.4;
-}
-
+.content { padding: 20px; }
+.brand { font-size: 13px; font-weight: 700; color: #ff6a00; margin-bottom: 8px; }
+h1 { margin: 0 0 12px; font-size: 21px; line-height: 1.4; }
 .description {
   margin: 0;
-
   color: #555;
-
   font-size: 15px;
-
   line-height: 1.7;
-
   display: -webkit-box;
-
   -webkit-line-clamp: 4;
-
   -webkit-box-orient: vertical;
-
   overflow: hidden;
 }
-
 .button {
   display: block;
-
   margin-top: 18px;
-
   padding: 13px 18px;
-
   border-radius: 10px;
-
   text-align: center;
-
   text-decoration: none;
-
   background: #ff6a00;
-
   color: white;
-
   font-weight: 700;
 }
-
 </style>
-
 </head>
-
 <body>
-
 <div class="preview">
-
-  <img
-    class="preview-image"
-    src="${safeImage}"
-    alt="${safeName}"
-  >
-
+  <img class="preview-image" src="${safeImage}" alt="${safeName}">
   <div class="content">
-
-    <div class="brand">
-      SERA PRODUCT
-    </div>
-
-    <h1>
-      ${safeName}
-    </h1>
-
-    <p class="description">
-      ${safeDescription}
-    </p>
-
-    <a
-      class="button"
-      href="${escapeHtml(canonical)}"
-    >
-      প্রোডাক্ট দেখুন
-    </a>
-
+    <div class="brand">SERA PRODUCT</div>
+    <h1>${safeName}</h1>
+    <p class="description">${safeDescription}</p>
+    <a class="button" href="${escapeHtml(canonical)}">প্রোডাক্ট দেখুন</a>
   </div>
-
 </div>
-
 </body>
-
 </html>`;
 }
 
-/* =========================================================
-   HTML Escape
-========================================================= */
-
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
   return String(value)
-   .replace(
-      /&/g,
-      "&amp;"
-    )
-   .replace(
-      /</g,
-      "&lt;"
-    )
-   .replace(
-      />/g,
-      "&gt;"
-    )
-   .replace(
-      /"/g,
-      "&quot;"
-    )
-   .replace(
-      /'/g,
-      "&#039;"
-    );
+   .replace(/&/g, "&amp;")
+   .replace(/</g, "&lt;")
+   .replace(/>/g, "&gt;")
+   .replace(/"/g, "&quot;")
+   .replace(/'/g, "&#039;");
 }
