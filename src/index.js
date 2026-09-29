@@ -3,7 +3,7 @@ export default {
     try {
       const url = new URL(request.url);
 
-      if (url.pathname !== "/product") {
+      if (url.pathname!== "/product") {
         return fetch(request); // অন্য URL হলে আসল সাইট
       }
 
@@ -11,7 +11,7 @@ export default {
       const FIREBASE_DATABASE = env.FIREBASE_DATABASE || "(default)";
       const FIREBASE_API_KEY = env.FIREBASE_API_KEY;
 
-      if (!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY) {
+      if (!FIREBASE_PROJECT_ID ||!FIREBASE_API_KEY) {
         return fetch(request);
       }
 
@@ -160,7 +160,7 @@ export default {
 
       const image =
         images.length > 0
-          ? images[0]
+         ? images[0]
           : "https://seraproduct.com/photo/logo.png";
 
       const html =
@@ -185,21 +185,8 @@ export default {
   }
 };
 
-
 /* =========================================================
    Bot Detector
-   =========================================================
-   
-   Social Preview Bot হলে:
-   → Preview HTML
-   
-   Google/Bing/Search Bot হলে:
-   → false
-   → আসল website
-   
-   সাধারণ মানুষ হলে:
-   → false
-   → আসল website
 ========================================================= */
 
 function isPreviewBot(
@@ -209,20 +196,12 @@ function isPreviewBot(
   const ua =
     userAgent.toLowerCase();
 
-  // ?bot=true দিলে Preview
-  // টেস্ট করার জন্য ব্যবহার করতে পারো
   if (
     search.includes("bot=true")
   ) {
     return true;
   }
 
-  /*
-   * Social Preview Bots
-   *
-   * এদের জন্য Preview HTML
-   * দেওয়া হবে।
-   */
   const socialBots = [
     "facebookexternalhit",
     "facebookcatalog",
@@ -239,14 +218,6 @@ function isPreviewBot(
     "facebot"
   ];
 
-  /*
-   * Search Engine Bots
-   *
-   * এদের Preview দেওয়া হবে না।
-   *
-   * Google/Bing সহ Search Bot
-   * আসল website পাবে।
-   */
   const searchBots = [
     "googlebot",
     "bingbot",
@@ -257,10 +228,6 @@ function isPreviewBot(
     "googleother"
   ];
 
-  /*
-   * Search Bot হলে
-   * কখনো Social Preview নয়।
-   */
   if (
     searchBots.some(
       bot => ua.includes(bot)
@@ -269,15 +236,10 @@ function isPreviewBot(
     return false;
   }
 
-  /*
-   * Social Preview Bot হলে
-   * Preview দেখাবে।
-   */
   return socialBots.some(
     bot => ua.includes(bot)
   );
 }
-
 
 /* =========================================================
    Firestore Value Parser
@@ -291,32 +253,31 @@ function getFirestoreValue(
   }
 
   if (
-    field.stringValue !== undefined
+    field.stringValue!== undefined
   ) {
     return field.stringValue;
   }
 
   if (
-    field.integerValue !== undefined
+    field.integerValue!== undefined
   ) {
     return field.integerValue;
   }
 
   if (
-    field.doubleValue !== undefined
+    field.doubleValue!== undefined
   ) {
     return field.doubleValue;
   }
 
   if (
-    field.booleanValue !== undefined
+    field.booleanValue!== undefined
   ) {
     return field.booleanValue;
   }
 
   return null;
 }
-
 
 /* =========================================================
    Firestore Array Parser
@@ -326,8 +287,8 @@ function getFirestoreArray(
   field
 ) {
   if (
-    !field ||
-    !field.arrayValue
+   !field ||
+   !field.arrayValue
   ) {
     return [];
   }
@@ -336,12 +297,11 @@ function getFirestoreArray(
     field.arrayValue.values || [];
 
   return values
-    .map(item =>
+   .map(item =>
       getFirestoreValue(item)
     )
-    .filter(Boolean);
+   .filter(Boolean);
 }
-
 
 /* =========================================================
    HTML Response
@@ -367,9 +327,8 @@ function htmlResponse(
   );
 }
 
-
 /* =========================================================
-   Product Preview HTML
+   Product Preview HTML - OG Title বাদ দেওয়া হয়েছে
 ========================================================= */
 
 function productPreview({
@@ -412,13 +371,7 @@ function productPreview({
   content="${safeDescription}"
 >
 
-
-<!-- Open Graph -->
-
-<meta
-  property="og:title"
-  content="${safeName}"
->
+<!-- Open Graph - Title বাদ দেওয়া হয়েছে -->
 
 <meta
   property="og:description"
@@ -445,17 +398,11 @@ function productPreview({
   content="SERA PRODUCT"
 >
 
-
-<!-- Twitter -->
+<!-- Twitter - Title বাদ দেওয়া হয়েছে -->
 
 <meta
   name="twitter:card"
   content="summary_large_image"
->
-
-<meta
-  name="twitter:title"
-  content="${safeName}"
 >
 
 <meta
@@ -468,12 +415,10 @@ function productPreview({
   content="${safeImage}"
 >
 
-
 <link
   rel="icon"
   href="https://seraproduct.com/photo/logo.png"
 >
-
 
 <style>
 
@@ -635,7 +580,6 @@ h1 {
 </html>`;
 }
 
-
 /* =========================================================
    HTML Escape
 ========================================================= */
@@ -644,23 +588,23 @@ function escapeHtml(
   value
 ) {
   return String(value)
-    .replace(
+   .replace(
       /&/g,
       "&amp;"
     )
-    .replace(
+   .replace(
       /</g,
       "&lt;"
     )
-    .replace(
+   .replace(
       />/g,
       "&gt;"
     )
-    .replace(
+   .replace(
       /"/g,
       "&quot;"
     )
-    .replace(
+   .replace(
       /'/g,
       "&#039;"
     );
